@@ -1,5 +1,4 @@
 import { ExternalLink, ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { ErrorBanner } from "@/components/error-banner";
 import { VenueBadge } from "@/components/venue-badge";
 import { findArbitrage } from "@/lib/arbitrage";
@@ -158,14 +157,14 @@ function Leg({
       <div className="mb-2 line-clamp-2 text-sm">{title}</div>
       <div className="flex items-center justify-between">
         <span className="font-mono text-sm">{formatPrice(price)}</span>
-        <Link
+        <a
           href={url}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
         >
           Open <ExternalLink className="h-3 w-3" />
-        </Link>
+        </a>
       </div>
     </div>
   );

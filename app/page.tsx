@@ -1,7 +1,13 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { ArrowRight, Activity, Search, Sparkles, Scale } from "lucide-react";
 
-const features = [
+const features: {
+  icon: typeof Scale;
+  title: string;
+  body: string;
+  href: Route;
+}[] = [
   {
     icon: Scale,
     title: "Cross-venue arbitrage",
@@ -70,7 +76,7 @@ export default function HomePage() {
           return (
             <Link
               key={f.title}
-              href={f.href as never}
+              href={f.href}
               className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
             >
               <Icon className="mb-4 h-5 w-5 text-[var(--color-accent)]" />

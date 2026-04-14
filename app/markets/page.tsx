@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { fetchAllMarkets } from "@/lib/markets";
 import { formatPrice, formatUsd, relativeDate } from "@/lib/utils";
@@ -64,14 +63,14 @@ export default async function MarketsPage() {
                   {relativeDate(m.endDate)}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link
+                  <a
                     href={m.url}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
                   >
                     Open <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  </a>
                 </td>
               </tr>
             ))}
