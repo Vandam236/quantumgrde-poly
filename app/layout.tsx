@@ -16,33 +16,36 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <header className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)]/85 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-[var(--color-accent)]" />
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-accent)] text-white shadow-sm">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M3 17l5-5 4 4 8-8" />
+                  <path d="M14 8h6v6" />
+                </svg>
+              </div>
               <span className="font-semibold tracking-tight">QuantumGrde</span>
-              <span className="text-xs text-[var(--color-muted)]">
+              <span className="hidden text-xs text-[var(--color-muted)] sm:inline">
                 prediction market intel
               </span>
             </Link>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link
-                href="/markets"
-                className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
-              >
-                Markets
-              </Link>
-              <Link
-                href="/arbitrage"
-                className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
-              >
-                Arbitrage
-              </Link>
+            <nav className="flex items-center gap-1 text-sm">
+              <NavLink href="/markets" label="Markets" />
+              <NavLink href="/arbitrage" label="Arbitrage" />
               <a
                 href="https://github.com/vandam236/quantumgrde-poly"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                className="rounded-md px-3 py-1.5 text-[var(--color-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
               >
                 GitHub
               </a>
@@ -58,5 +61,22 @@ export default function RootLayout({
         </footer>
       </body>
     </html>
+  );
+}
+
+function NavLink({
+  href,
+  label,
+}: {
+  href: "/markets" | "/arbitrage";
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-md px-3 py-1.5 text-[var(--color-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+    >
+      {label}
+    </Link>
   );
 }

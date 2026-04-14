@@ -1,8 +1,8 @@
 import type { Venue } from "@/lib/types";
 
 const STYLES: Record<Venue, string> = {
-  polymarket: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-  kalshi: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  polymarket: "bg-violet-50 text-violet-700 border-violet-200",
+  kalshi: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
 const LABELS: Record<Venue, string> = {

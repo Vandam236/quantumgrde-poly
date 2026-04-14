@@ -44,6 +44,41 @@ function num(s: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function gammaToUnified(m: GammaMarket): UnifiedMarket | null {
+  if (m.closed || m.archived) return null;
+  const outcomes = parseJsonArray(m.outcomes);
+  const prices = parseJsonArray(m.outcomePrices).map(num);
+  if (outcomes.length !== 2 || prices.length !== 2) return null;
+
+  // Normalize so YES is the affirmative outcome.
+  const yesIdx =
+    outcomes.findIndex((o) => /^yes$/i.test(o)) >= 0
+      ? outcomes.findIndex((o) => /^yes$/i.test(o))
+      : 0;
+  const noIdx = yesIdx === 0 ? 1 : 0;
+
+  const yesPrice = prices[yesIdx];
+  const noPrice = prices[noIdx];
+  if (!Number.isFinite(yesPrice) || !Number.isFinite(noPrice)) return null;
+  if (yesPrice <= 0 || yesPrice >= 1) return null;
+
+  return {
+    id: `polymarket:${m.id}`,
+    venue: "polymarket",
+    title: m.question,
+    description: m.description,
+    category: m.category,
+    yesPrice,
+    noPrice,
+    volume24h: num(m.volume24hr),
+    volumeTotal: num(m.volume),
+    liquidity: num(m.liquidity),
+    endDate: m.endDate,
+    url: `https://polymarket.com/market/${m.slug}`,
+    slug: m.slug,
+  };
+}
+
 /**
  * Fetch active binary markets, normalized to UnifiedMarket.
  * Polymarket returns multi-outcome events too; we keep only 2-outcome
@@ -71,38 +106,31 @@ export async function fetchPolymarketMarkets(
 
   const out: UnifiedMarket[] = [];
   for (const m of raw) {
-    if (m.closed || m.archived) continue;
-    const outcomes = parseJsonArray(m.outcomes);
-    const prices = parseJsonArray(m.outcomePrices).map(num);
-    if (outcomes.length !== 2 || prices.length !== 2) continue;
-
-    // Normalize so YES is the affirmative outcome.
-    const yesIdx =
-      outcomes.findIndex((o) => /^yes$/i.test(o)) >= 0
-        ? outcomes.findIndex((o) => /^yes$/i.test(o))
-        : 0;
-    const noIdx = yesIdx === 0 ? 1 : 0;
-
-    const yesPrice = prices[yesIdx];
-    const noPrice = prices[noIdx];
-    if (!Number.isFinite(yesPrice) || !Number.isFinite(noPrice)) continue;
-    if (yesPrice <= 0 || yesPrice >= 1) continue;
-
-    out.push({
-      id: `polymarket:${m.id}`,
-      venue: "polymarket",
-      title: m.question,
-      description: m.description,
-      category: m.category,
-      yesPrice,
-      noPrice,
-      volume24h: num(m.volume24hr),
-      volumeTotal: num(m.volume),
-      liquidity: num(m.liquidity),
-      endDate: m.endDate,
-      url: `https://polymarket.com/market/${m.slug}`,
-      slug: m.slug,
-    });
+    const u = gammaToUnified(m);
+    if (u) out.push(u);
   }
   return out;
+}
+
+/**
+ * Fetch a single Polymarket market by slug, normalized.
+ * Returns null if not found or not a binary market.
+ */
+export async function fetchPolymarketMarketBySlug(
+  slug: string,
+): Promise<UnifiedMarket | null> {
+  const url = new URL(`${GAMMA}/markets`);
+  url.searchParams.set("slug", slug);
+  url.searchParams.set("limit", "1");
+
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 30 },
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(`Polymarket gamma ${res.status}: ${await res.text()}`);
+  }
+  const raw = (await res.json()) as GammaMarket[];
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  return gammaToUnified(raw[0]);
 }

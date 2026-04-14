@@ -1,28 +1,29 @@
 # QuantumGrde — Prediction Market Intelligence
 
 A real-time decision-support dashboard that aggregates **Polymarket** and
-**Kalshi**, scans for cross-venue arbitrage, and (in upcoming phases)
-generates AI research briefs on individual markets.
+**Kalshi**, scans for cross-venue arbitrage, and generates **AI research
+briefs** on individual markets via Claude Sonnet 4.6.
 
 This is a **research tool**, not a trading bot. We never custody funds or
 execute trades on your behalf.
 
 ## Stack
 
-- **Next.js 15** (App Router, RSC, typed routes)
-- **React 19** + TypeScript
-- **Tailwind CSS v4** (CSS-first config via `@theme`)
+- **Next.js 15.5** (App Router, RSC, typed routes, Suspense streaming)
+- **React 19** + TypeScript (strict)
+- **Tailwind CSS v4** (CSS-first config via `@theme`, light/green palette)
+- **Anthropic SDK** with prompt caching + tool-use for structured briefs
 - **lucide-react** icons
-- Public Polymarket Gamma + Kalshi v2 APIs (no auth required for the MVP)
+- Public Polymarket Gamma + Kalshi v2 APIs (no auth required for venue data)
 
-## Features (MVP)
+## Features
 
 | Status | Feature |
 |--------|---------|
-| Done | Polymarket + Kalshi market ingestion, normalized to a unified schema |
-| Done | `/markets` — top markets across venues, ranked by 24h volume |
-| Done | `/arbitrage` — cross-venue arbitrage scanner with fee-adjusted edge |
-| Next | AI research briefs (Claude Sonnet 4.6 with prompt caching) |
+| ✅ | Polymarket + Kalshi ingestion, normalized to a unified schema |
+| ✅ | `/markets` — top markets across venues, ranked by 24h volume |
+| ✅ | `/arbitrage` — cross-venue scanner with fee-adjusted edge & ROI |
+| ✅ | `/research/[venue]/[slug]` — AI brief with structured tool-use output, Suspense streaming, fair-value vs market-price delta |
 | Next | Order book depth + slippage calculator |
 | Next | Email/Telegram alerts on user-defined edges |
 | Later | News-to-market impact feed (requires persistent worker, not Vercel) |
@@ -33,54 +34,67 @@ execute trades on your behalf.
 
 ```bash
 npm install
+cp .env.example .env.local   # add your ANTHROPIC_API_KEY
 npm run dev
 ```
 
 Then open http://localhost:3000.
 
-The app pulls live data from public endpoints — no `.env` is required to
-boot. Copy `.env.example` to `.env.local` if/when you add features that need
-keys (Anthropic, Supabase, etc).
+Venue data loads from public endpoints with no env required. The research
+brief feature requires `ANTHROPIC_API_KEY`; without it, the research page
+renders a setup prompt instead of crashing.
 
 ## Project structure
 
 ```
 app/
-  layout.tsx          # root layout, nav, footer
-  page.tsx            # landing
-  markets/page.tsx    # unified market list
-  arbitrage/page.tsx  # cross-venue arb scanner
+  layout.tsx                          # sticky nav, footer
+  page.tsx                            # landing
+  markets/page.tsx                    # unified market list
+  arbitrage/page.tsx                  # cross-venue arb scanner
+  research/[venue]/[slug]/page.tsx    # streamed AI brief
 components/
   venue-badge.tsx
   error-banner.tsx
+  research-brief.tsx                  # BriefView + BriefSkeleton
 lib/
-  types.ts            # UnifiedMarket, ArbOpportunity, FeeModel
-  polymarket.ts       # Gamma API adapter
-  kalshi.ts           # Kalshi v2 adapter
-  markets.ts          # parallel fetch + partial-failure handling
-  arbitrage.ts        # title matching + edge calculation
-  utils.ts            # formatters, cn helper
+  types.ts                            # UnifiedMarket, ArbOpportunity, FeeModel
+  polymarket.ts                       # Gamma adapter (list + by-slug)
+  kalshi.ts                           # Kalshi v2 adapter (list + by-ticker)
+  markets.ts                          # parallel fetch + partial-failure
+  arbitrage.ts                        # title matching + edge math
+  anthropic.ts                        # Claude SDK singleton + key check
+  research.ts                         # tool-use brief generator + prompt
+  research-url.ts                     # type-safe research route helper
+  utils.ts                            # formatters, cn helper
 ```
 
 ## Architecture notes
 
-- **Adapters normalize to `UnifiedMarket`.** Adding a new venue (Manifold,
-  PredictIt, Insight) means writing one file in `lib/`. Pricing math and the
-  UI never touch venue-specific shapes.
+- **Adapters normalize to `UnifiedMarket`.** Adding Manifold/PredictIt is
+  one new file under `lib/`. Pricing math and the UI never touch
+  venue-specific shapes.
 - **Title matching is intentionally crude** (Jaccard over significant
-  tokens). It is the right starting point because (a) it has zero
-  dependencies, (b) it is interpretable when wrong, and (c) the matching
-  function is isolated so swapping in embeddings later is a one-file change.
-- **Fees are conservative.** See `FEES` in `lib/arbitrage.ts`. Refine per
-  venue/asset class as you measure real fills.
+  tokens). It is the right starting point because (a) zero dependencies,
+  (b) interpretable when wrong, and (c) isolated behind `titleSimilarity()`
+  so swapping in embeddings later is a one-file change.
+- **Research briefs use Claude tool-use for structured output.** The
+  `submit_brief` tool defines a JSON schema that Claude is forced to emit,
+  giving us guaranteed-shape data with no parser fragility. The system
+  prompt is marked with `cache_control: ephemeral` so repeat clicks within
+  ~5 minutes pay only the cache-read rate.
+- **Suspense streaming** sends the page shell first (market header,
+  skeleton) and resolves the Claude call as a streamed boundary, so
+  perceived latency is just the time to first byte.
 - **Vercel is for the UI only.** Anything that needs persistent
   websockets (CLOB streams, news firehose, latency-sensitive alerts)
   belongs on a long-running worker (Fly.io / Railway), not serverless.
 
 ## Disclaimer
 
-Data may be delayed, incorrect, or stale. Arbitrage opportunities surfaced
-by this tool depend on accurate cross-venue matching and may not actually be
-arbitrageable due to slippage, fees, geographic restrictions, or
-resolution-criteria mismatches. **Verify everything before you trade.** Not
-financial advice.
+Data may be delayed, incorrect, or stale. AI briefs are generated by a
+language model and may contain errors, omissions, or fabricated facts —
+verify everything before acting. Arbitrage opportunities depend on
+accurate cross-venue matching and may not actually be arbitrageable due to
+slippage, fees, geographic restrictions, or resolution-criteria mismatches.
+**Verify everything before you trade.** Not financial advice.

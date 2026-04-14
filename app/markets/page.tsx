@@ -1,8 +1,10 @@
-import { ExternalLink } from "lucide-react";
-import { fetchAllMarkets } from "@/lib/markets";
-import { formatPrice, formatUsd, relativeDate } from "@/lib/utils";
-import { VenueBadge } from "@/components/venue-badge";
+import { ExternalLink, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { ErrorBanner } from "@/components/error-banner";
+import { VenueBadge } from "@/components/venue-badge";
+import { fetchAllMarkets } from "@/lib/markets";
+import { researchHrefFor } from "@/lib/research-url";
+import { formatPrice, formatUsd, relativeDate } from "@/lib/utils";
 
 export const revalidate = 60;
 export const dynamic = "force-dynamic";
@@ -18,15 +20,17 @@ export default async function MarketsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Markets</h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          {markets.length} active markets across {new Set(markets.map((m) => m.venue)).size} venues, ranked by 24h volume.
+        <h1 className="text-3xl font-semibold tracking-tight">Markets</h1>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
+          {markets.length} active markets across{" "}
+          {new Set(markets.map((m) => m.venue)).size} venues, ranked by 24h
+          volume.
         </p>
       </div>
 
       <ErrorBanner errors={errors} />
 
-      <div className="overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] text-xs uppercase tracking-wider text-[var(--color-muted)]">
             <tr>
@@ -62,15 +66,24 @@ export default async function MarketsPage() {
                 <td className="px-4 py-3 text-right text-[var(--color-muted)]">
                   {relativeDate(m.endDate)}
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <a
-                    href={m.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
-                  >
-                    Open <ExternalLink className="h-3 w-3" />
-                  </a>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-3">
+                    <Link
+                      href={researchHrefFor(m)}
+                      className="inline-flex items-center gap-1 rounded-md border border-[var(--color-accent-soft-2)] bg-[var(--color-accent-soft)] px-2 py-1 text-xs font-medium text-[var(--color-accent-strong)] hover:bg-[var(--color-accent-soft-2)]"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Research
+                    </Link>
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                    >
+                      Open <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}

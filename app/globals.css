@@ -1,18 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0a0a0b;
-  --color-surface: #111114;
-  --color-surface-2: #17171c;
-  --color-border: #26262e;
-  --color-text: #e7e7ea;
-  --color-muted: #8a8a93;
-  --color-accent: #7c5cff;
-  --color-positive: #22c55e;
-  --color-negative: #ef4444;
-  --color-warning: #f59e0b;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  /* Surfaces — clean white with a barely-tinted page background */
+  --color-bg: #f6f8f7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f5f3;
+  --color-surface-3: #e8efea;
+
+  /* Borders */
+  --color-border: #e3e8e5;
+  --color-border-strong: #cdd5d0;
+
+  /* Text */
+  --color-text: #0b1f17;
+  --color-text-soft: #2c3e36;
+  --color-muted: #5b6b63;
+
+  /* Accent — emerald green */
+  --color-accent: #10b981;
+  --color-accent-hover: #059669;
+  --color-accent-strong: #047857;
+  --color-accent-soft: #d1fae5;
+  --color-accent-soft-2: #a7f3d0;
+
+  /* Semantic */
+  --color-positive: #059669;
+  --color-negative: #dc2626;
+  --color-warning: #d97706;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-card-lg: 0 4px 12px rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 html,
@@ -21,6 +45,7 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -30,4 +55,9 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background: var(--color-accent-soft-2);
+  color: var(--color-accent-strong);
 }

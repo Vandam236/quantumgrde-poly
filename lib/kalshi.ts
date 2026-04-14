@@ -43,6 +43,58 @@ function cents(n: number | undefined): number | undefined {
   return n / 100;
 }
 
+function kalshiToUnified(m: KalshiMarket): UnifiedMarket | null {
+  if (m.status !== "active" && m.status !== "open") return null;
+
+  const yesAsk = cents(m.yes_ask);
+  const yesBid = cents(m.yes_bid);
+  const noAsk = cents(m.no_ask);
+  const noBid = cents(m.no_bid);
+  const last = cents(m.last_price);
+
+  // Use mid of bid/ask for the displayed price; fall back to last.
+  const yesPrice =
+    yesBid !== undefined && yesAsk !== undefined
+      ? (yesBid + yesAsk) / 2
+      : last ?? yesAsk ?? yesBid;
+  const noPrice =
+    noBid !== undefined && noAsk !== undefined
+      ? (noBid + noAsk) / 2
+      : yesPrice !== undefined
+        ? 1 - yesPrice
+        : undefined;
+
+  if (
+    yesPrice === undefined ||
+    noPrice === undefined ||
+    yesPrice <= 0 ||
+    yesPrice >= 1
+  ) {
+    return null;
+  }
+
+  return {
+    id: `kalshi:${m.ticker}`,
+    venue: "kalshi",
+    title: m.title + (m.subtitle ? ` — ${m.subtitle}` : ""),
+    description: m.rules_primary,
+    category: m.category,
+    yesPrice,
+    noPrice,
+    yesBid,
+    yesAsk,
+    noBid,
+    noAsk,
+    volume24h: m.volume_24h,
+    volumeTotal: m.volume,
+    liquidity: m.liquidity,
+    openInterest: m.open_interest,
+    endDate: m.close_time,
+    url: `https://kalshi.com/markets/${m.event_ticker ?? m.ticker}`,
+    slug: m.ticker,
+  };
+}
+
 /**
  * Fetch open Kalshi markets, normalized.
  *
@@ -66,55 +118,28 @@ export async function fetchKalshiMarkets(
 
   const out: UnifiedMarket[] = [];
   for (const m of data.markets ?? []) {
-    if (m.status !== "active" && m.status !== "open") continue;
-
-    const yesAsk = cents(m.yes_ask);
-    const yesBid = cents(m.yes_bid);
-    const noAsk = cents(m.no_ask);
-    const noBid = cents(m.no_bid);
-    const last = cents(m.last_price);
-
-    // Use mid of bid/ask for the displayed price; fall back to last.
-    const yesPrice =
-      yesBid !== undefined && yesAsk !== undefined
-        ? (yesBid + yesAsk) / 2
-        : last ?? yesAsk ?? yesBid;
-    const noPrice =
-      noBid !== undefined && noAsk !== undefined
-        ? (noBid + noAsk) / 2
-        : yesPrice !== undefined
-          ? 1 - yesPrice
-          : undefined;
-
-    if (
-      yesPrice === undefined ||
-      noPrice === undefined ||
-      yesPrice <= 0 ||
-      yesPrice >= 1
-    ) {
-      continue;
-    }
-
-    out.push({
-      id: `kalshi:${m.ticker}`,
-      venue: "kalshi",
-      title: m.title + (m.subtitle ? ` — ${m.subtitle}` : ""),
-      description: m.rules_primary,
-      category: m.category,
-      yesPrice,
-      noPrice,
-      yesBid,
-      yesAsk,
-      noBid,
-      noAsk,
-      volume24h: m.volume_24h,
-      volumeTotal: m.volume,
-      liquidity: m.liquidity,
-      openInterest: m.open_interest,
-      endDate: m.close_time,
-      url: `https://kalshi.com/markets/${m.event_ticker ?? m.ticker}`,
-      slug: m.ticker,
-    });
+    const u = kalshiToUnified(m);
+    if (u) out.push(u);
   }
   return out;
+}
+
+/**
+ * Fetch a single Kalshi market by ticker, normalized.
+ * Returns null if not found.
+ */
+export async function fetchKalshiMarketByTicker(
+  ticker: string,
+): Promise<UnifiedMarket | null> {
+  const res = await fetch(`${BASE}/markets/${encodeURIComponent(ticker)}`, {
+    next: { revalidate: 30 },
+    headers: { accept: "application/json" },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`Kalshi ${res.status}: ${await res.text()}`);
+  }
+  const data = (await res.json()) as { market?: KalshiMarket };
+  if (!data.market) return null;
+  return kalshiToUnified(data.market);
 }
