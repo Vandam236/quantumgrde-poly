@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    typedRoutes: true,
-  },
+  // typedRoutes graduated from experimental to stable in Next 15.5.
+  typedRoutes: true,
 };
 
 export default nextConfig;
