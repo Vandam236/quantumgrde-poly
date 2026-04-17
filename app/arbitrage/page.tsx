@@ -1,4 +1,4 @@
-import { ExternalLink, ArrowRight, Sparkles } from "lucide-react";
+import { ExternalLink, ArrowRight, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ErrorBanner } from "@/components/error-banner";
 import { VenueBadge } from "@/components/venue-badge";
@@ -31,6 +31,14 @@ export default async function ArbitragePage() {
           both markets describe the same event before trading.
         </p>
       </div>
+
+      <Link
+        href="/guaranteed"
+        className="flex items-center gap-2 rounded-lg border border-[var(--color-accent-soft-2)] bg-[var(--color-accent-soft)] px-4 py-2.5 text-sm text-[var(--color-accent-strong)] hover:bg-[var(--color-accent-soft-2)]"
+      >
+        <Shield className="h-4 w-4" />
+        Looking for multi-outcome opportunities? Try the Dutch Scanner →
+      </Link>
 
       <ErrorBanner errors={errors} />
 

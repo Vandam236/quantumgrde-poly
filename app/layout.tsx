@@ -41,6 +41,7 @@ export default function RootLayout({
             <nav className="flex items-center gap-1 text-sm">
               <NavLink href="/markets" label="Markets" />
               <NavLink href="/arbitrage" label="Arbitrage" />
+              <NavLink href="/guaranteed" label="Dutch Scanner" />
               <a
                 href="https://github.com/vandam236/quantumgrde-poly"
                 target="_blank"
@@ -68,7 +69,7 @@ function NavLink({
   href,
   label,
 }: {
-  href: "/markets" | "/arbitrage";
+  href: "/markets" | "/arbitrage" | "/guaranteed";
   label: string;
 }) {
   return (

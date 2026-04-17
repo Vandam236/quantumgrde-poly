@@ -4,9 +4,9 @@
  * Conventions:
  *  - Prices are in 0..1 (probability), not cents. Adapters convert.
  *  - `id` is namespaced by venue: e.g. "polymarket:0xabc...", "kalshi:PRES-2024-DJT".
- *  - Binary markets only for MVP. Multi-outcome markets are decomposed by
- *    each outcome representing a separate UnifiedMarket where `yesPrice`
- *    is the price of that outcome occurring.
+ *  - Multi-outcome markets are decomposed: each outcome is a separate
+ *    UnifiedMarket sharing the same `eventId`, with `outcomeLabel`
+ *    identifying the specific outcome.
  */
 export type Venue = "polymarket" | "kalshi";
 
@@ -38,6 +38,11 @@ export interface UnifiedMarket {
 
   url: string;
   slug?: string;
+
+  /** Groups outcomes under one event. E.g. "polymarket:event:<conditionId>". */
+  eventId?: string;
+  /** Human-readable outcome label. E.g. "Trump", "Biden". Undefined for plain Yes/No binary markets. */
+  outcomeLabel?: string;
 }
 
 export interface ArbOpportunity {
@@ -64,4 +69,63 @@ export interface FeeModel {
   takerFee: number;
   /** Fee on profits at resolution, expressed as fraction of profit (e.g. 0.02 for 2%). */
   profitFee: number;
+}
+
+// --- Event grouping & dutch scanning types ---
+
+export interface EventGroup {
+  eventId: string;
+  title: string;
+  venue: Venue;
+  outcomes: OutcomeOption[];
+  endDate?: string;
+  category?: string;
+}
+
+export interface OutcomeOption {
+  label: string;
+  market: UnifiedMarket;
+  price: number;
+  venue: Venue;
+}
+
+export interface DutchOpportunity {
+  id: string;
+  type: "single-venue" | "cross-venue";
+  eventTitle: string;
+  legs: DutchLeg[];
+  totalCost: number;
+  grossProfit: number;
+  netProfit: number;
+  roi: number;
+  matchScore?: number;
+}
+
+export interface DutchLeg {
+  outcomeLabel: string;
+  market: UnifiedMarket;
+  price: number;
+  venue: Venue;
+  isCheapest?: boolean;
+  alternativePrice?: number;
+  alternativeVenue?: Venue;
+}
+
+export interface CrossVenueEvent {
+  eventTitle: string;
+  matchScore: number;
+  outcomes: CrossVenueOutcome[];
+}
+
+export interface CrossVenueOutcome {
+  label: string;
+  options: { venue: Venue; market: UnifiedMarket; price: number }[];
+  cheapest: Venue;
+}
+
+export interface ScanStats {
+  marketsScanned: number;
+  eventsFound: number;
+  singleVenueOpps: number;
+  crossVenueOpps: number;
 }

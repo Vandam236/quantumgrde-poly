@@ -44,45 +44,79 @@ function num(s: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function gammaToUnified(m: GammaMarket): UnifiedMarket | null {
-  if (m.closed || m.archived) return null;
+/**
+ * Convert a single Gamma market to one or more UnifiedMarkets.
+ *
+ * Binary (2-outcome) markets: returns [single market] — backward compatible.
+ * Multi-outcome (3+) markets: returns one UnifiedMarket per outcome, each
+ * sharing the same `eventId` so the dutch scanner can group them.
+ */
+function gammaToUnifiedMarkets(m: GammaMarket): UnifiedMarket[] {
+  if (m.closed || m.archived) return [];
   const outcomes = parseJsonArray(m.outcomes);
   const prices = parseJsonArray(m.outcomePrices).map(num);
-  if (outcomes.length !== 2 || prices.length !== 2) return null;
+  if (outcomes.length < 2 || outcomes.length !== prices.length) return [];
 
-  // Normalize so YES is the affirmative outcome.
-  const yesIdx =
-    outcomes.findIndex((o) => /^yes$/i.test(o)) >= 0
-      ? outcomes.findIndex((o) => /^yes$/i.test(o))
-      : 0;
-  const noIdx = yesIdx === 0 ? 1 : 0;
+  const eventId = m.conditionId
+    ? `polymarket:event:${m.conditionId}`
+    : `polymarket:event:${m.id}`;
 
-  const yesPrice = prices[yesIdx];
-  const noPrice = prices[noIdx];
-  if (!Number.isFinite(yesPrice) || !Number.isFinite(noPrice)) return null;
-  if (yesPrice <= 0 || yesPrice >= 1) return null;
-
-  return {
-    id: `polymarket:${m.id}`,
-    venue: "polymarket",
-    title: m.question,
+  const base = {
+    venue: "polymarket" as const,
     description: m.description,
     category: m.category,
-    yesPrice,
-    noPrice,
     volume24h: num(m.volume24hr),
     volumeTotal: num(m.volume),
     liquidity: num(m.liquidity),
     endDate: m.endDate,
     url: `https://polymarket.com/market/${m.slug}`,
     slug: m.slug,
+    eventId,
   };
+
+  // Binary market (Yes/No): single UnifiedMarket, same shape as before.
+  if (outcomes.length === 2) {
+    const yesIdx =
+      outcomes.findIndex((o) => /^yes$/i.test(o)) >= 0
+        ? outcomes.findIndex((o) => /^yes$/i.test(o))
+        : 0;
+    const noIdx = yesIdx === 0 ? 1 : 0;
+    const yesPrice = prices[yesIdx];
+    const noPrice = prices[noIdx];
+    if (!Number.isFinite(yesPrice) || !Number.isFinite(noPrice)) return [];
+    if (yesPrice <= 0 || yesPrice >= 1) return [];
+
+    return [
+      {
+        ...base,
+        id: `polymarket:${m.id}`,
+        title: m.question,
+        yesPrice,
+        noPrice,
+      },
+    ];
+  }
+
+  // Multi-outcome market (3+): one UnifiedMarket per outcome.
+  const out: UnifiedMarket[] = [];
+  for (let i = 0; i < outcomes.length; i++) {
+    const price = prices[i];
+    if (!Number.isFinite(price) || price <= 0 || price >= 1) continue;
+    out.push({
+      ...base,
+      id: `polymarket:${m.id}:outcome:${i}`,
+      title: m.question,
+      yesPrice: price,
+      noPrice: 1 - price,
+      outcomeLabel: outcomes[i],
+    });
+  }
+  return out;
 }
 
 /**
- * Fetch active binary markets, normalized to UnifiedMarket.
- * Polymarket returns multi-outcome events too; we keep only 2-outcome
- * (Yes/No) markets for the arbitrage MVP.
+ * Fetch active markets, normalized to UnifiedMarket[].
+ * Now includes both binary and multi-outcome markets.
  */
 export async function fetchPolymarketMarkets(
   limit = 200,
@@ -106,8 +140,7 @@ export async function fetchPolymarketMarkets(
 
   const out: UnifiedMarket[] = [];
   for (const m of raw) {
-    const u = gammaToUnified(m);
-    if (u) out.push(u);
+    out.push(...gammaToUnifiedMarkets(m));
   }
   return out;
 }
@@ -132,5 +165,6 @@ export async function fetchPolymarketMarketBySlug(
   }
   const raw = (await res.json()) as GammaMarket[];
   if (!Array.isArray(raw) || raw.length === 0) return null;
-  return gammaToUnified(raw[0]);
+  const markets = gammaToUnifiedMarkets(raw[0]);
+  return markets.length > 0 ? markets[0] : null;
 }

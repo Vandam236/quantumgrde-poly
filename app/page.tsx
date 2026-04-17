@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, Activity, Search, Sparkles, Scale } from "lucide-react";
+import { ArrowRight, Activity, Search, Sparkles, Scale, Shield } from "lucide-react";
 
 const features: {
   icon: typeof Scale;
@@ -25,6 +25,12 @@ const features: {
     title: "AI research briefs",
     body: "On-demand Claude-powered briefs with base rates, catalysts, expert forecasts, and counterarguments.",
     href: "/markets",
+  },
+  {
+    icon: Shield,
+    title: "Guaranteed profit scanner",
+    body: "Buy all outcomes of an event for less than the $1 payout. Multi-outcome dutching across any category.",
+    href: "/guaranteed" as Route,
   },
   {
     icon: Activity,

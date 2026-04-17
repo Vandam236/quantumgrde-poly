@@ -92,6 +92,10 @@ function kalshiToUnified(m: KalshiMarket): UnifiedMarket | null {
     endDate: m.close_time,
     url: `https://kalshi.com/markets/${m.event_ticker ?? m.ticker}`,
     slug: m.ticker,
+    eventId: m.event_ticker
+      ? `kalshi:event:${m.event_ticker}`
+      : undefined,
+    outcomeLabel: m.title,
   };
 }
 
